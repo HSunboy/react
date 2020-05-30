@@ -953,6 +953,9 @@ function completeUnitOfWork(workInProgress: Fiber): Fiber | null {
     const returnFiber = workInProgress.return;
     const siblingFiber = workInProgress.sibling;
 
+    /**
+     * 未发现错误中断
+     */
     if ((workInProgress.effectTag & Incomplete) === NoEffect) {
       if (__DEV__ && replayFailedUnitOfWorkWithInvokeGuardedCallback) {
         // Don't replay if it fails during completion phase.
@@ -1049,6 +1052,9 @@ function completeUnitOfWork(workInProgress: Fiber): Fiber | null {
         return null;
       }
     } else {
+      /**
+       * 发生错误中断了
+       */
       if (enableProfilerTimer && workInProgress.mode & ProfileMode) {
         // Record the render duration for the fiber that errored.
         stopProfilerTimerIfRunningAndRecordDelta(workInProgress, false);
@@ -1786,6 +1792,9 @@ function scheduleWorkToRoot(fiber: Fiber, expirationTime): FiberRoot | null {
 }
 
 function scheduleWork(fiber: Fiber, expirationTime: ExpirationTime) {
+  /**
+   * 更新root节点的过期时间
+   */
   const root = scheduleWorkToRoot(fiber, expirationTime);
   if (root === null) {
     if (__DEV__) {
@@ -1914,6 +1923,7 @@ function scheduleCallbackWithExpirationTime(
     // A callback is already scheduled. Check its expiration time (timeout).
     if (expirationTime < callbackExpirationTime) {
       // Existing callback has sufficient timeout. Exit.
+      // 优先级太小，不能移除队列中的任务
       return;
     } else {
       if (callbackID !== null) {
@@ -1931,6 +1941,9 @@ function scheduleCallbackWithExpirationTime(
   const currentMs = now() - originalStartTimeMs;
   const expirationTimeMs = expirationTimeToMs(expirationTime);
   const timeout = expirationTimeMs - currentMs;
+  /**
+   * 开始执行调度了
+   */
   callbackID = scheduleDeferredCallback(performAsyncWork, {timeout});
 }
 
@@ -2317,63 +2330,33 @@ function performWorkOnRoot(
 
   isRendering = true;
 
-  // Check if this is async work or sync/expired work.
-  if (!isYieldy) {
-    // Flush work without yielding.
-    // TODO: Non-yieldy work does not necessarily imply expired work. A renderer
-    // may want to perform some work without yielding, but also without
-    // requiring the root to complete (by triggering placeholders).
-
-    let finishedWork = root.finishedWork;
-    if (finishedWork !== null) {
-      // This root is already complete. We can commit it.
-      completeRoot(root, finishedWork, expirationTime);
-    } else {
-      root.finishedWork = null;
-      // If this root previously suspended, clear its existing timeout, since
-      // we're about to try rendering again.
-      const timeoutHandle = root.timeoutHandle;
-      if (timeoutHandle !== noTimeout) {
-        root.timeoutHandle = noTimeout;
-        // $FlowFixMe Complains noTimeout is not a TimeoutID, despite the check above
-        cancelTimeout(timeoutHandle);
-      }
-      renderRoot(root, isYieldy);
-      finishedWork = root.finishedWork;
-      if (finishedWork !== null) {
-        // We've completed the root. Commit it.
-        completeRoot(root, finishedWork, expirationTime);
-      }
-    }
+  // Flush async work.
+  let finishedWork = root.finishedWork;
+  if (finishedWork !== null) {
+    // This root is already complete. We can commit it.
+    completeRoot(root, finishedWork, expirationTime);
   } else {
-    // Flush async work.
-    let finishedWork = root.finishedWork;
+    root.finishedWork = null;
+    // If this root previously suspended, clear its existing timeout, since
+    // we're about to try rendering again.
+    const timeoutHandle = root.timeoutHandle;
+    if (timeoutHandle !== noTimeout) {
+      root.timeoutHandle = noTimeout;
+      // $FlowFixMe Complains noTimeout is not a TimeoutID, despite the check above
+      cancelTimeout(timeoutHandle);
+    }
+    renderRoot(root, isYieldy);
+    finishedWork = root.finishedWork;
     if (finishedWork !== null) {
-      // This root is already complete. We can commit it.
-      completeRoot(root, finishedWork, expirationTime);
-    } else {
-      root.finishedWork = null;
-      // If this root previously suspended, clear its existing timeout, since
-      // we're about to try rendering again.
-      const timeoutHandle = root.timeoutHandle;
-      if (timeoutHandle !== noTimeout) {
-        root.timeoutHandle = noTimeout;
-        // $FlowFixMe Complains noTimeout is not a TimeoutID, despite the check above
-        cancelTimeout(timeoutHandle);
-      }
-      renderRoot(root, isYieldy);
-      finishedWork = root.finishedWork;
-      if (finishedWork !== null) {
-        // We've completed the root. Check the if we should yield one more time
-        // before committing.
-        if (!shouldYieldToRenderer()) {
-          // Still time left. Commit the root.
-          completeRoot(root, finishedWork, expirationTime);
-        } else {
-          // There's no time left. Mark this root as complete. We'll come
-          // back and commit it later.
-          root.finishedWork = finishedWork;
-        }
+      // We've completed the root. Check the if we should yield one more time
+      // before committing.
+      if (!isYieldy || !shouldYieldToRenderer()) {
+        // Still time left. Commit the root.
+        completeRoot(root, finishedWork, expirationTime);
+      } else {
+        // There's no time left. Mark this root as complete. We'll come
+        // back and commit it later.
+        root.finishedWork = finishedWork;
       }
     }
   }

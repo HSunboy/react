@@ -339,6 +339,9 @@ function ChildReconciler(shouldTrackSideEffects) {
     }
   }
 
+  /**
+   * 这是一个新的节点就打上tag
+   */
   function placeSingleChild(newFiber: Fiber): Fiber {
     // This is simpler for the single child case. We only need to do a
     // placement for inserting new children.
@@ -1122,6 +1125,9 @@ function ChildReconciler(shouldTrackSideEffects) {
             ? element.type === REACT_FRAGMENT_TYPE
             : child.elementType === element.type
         ) {
+          /**
+           * 什么都相等，表示这个是一个可复用的节点，我们拷贝原来的fiber，然后删除之前的兄弟节点，返回这个复用的节点。
+           */
           deleteRemainingChildren(returnFiber, child.sibling);
           const existing = useFiber(
             child,
@@ -1138,15 +1144,26 @@ function ChildReconciler(shouldTrackSideEffects) {
           }
           return existing;
         } else {
+          /**
+           * key相等，但是类型竟然不一样，因为key不能重复，所以后续节点没必要看，都删了
+           */
           deleteRemainingChildren(returnFiber, child);
           break;
         }
       } else {
+        /**
+         * key不相等，那就删了吧
+         */
         deleteChild(returnFiber, child);
       }
+      /**
+       * 看看别的子节点
+       */
       child = child.sibling;
     }
-
+    /**
+     * 一波下来，没有找到可以复用的节点，所以就自己创建
+     */
     if (element.type === REACT_FRAGMENT_TYPE) {
       const created = createFiberFromFragment(
         element.props.children,

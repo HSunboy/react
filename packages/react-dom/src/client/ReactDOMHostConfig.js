@@ -194,13 +194,22 @@ export function createInstance(
   } else {
     parentNamespace = ((hostContext: any): HostContextProd);
   }
+  /**
+   * 创建完成dom，但是还没有插入
+   */
   const domElement: Instance = createElement(
     type,
     props,
     rootContainerInstance,
     parentNamespace,
   );
+  /**
+   * 把fiber对象放到dom上一份
+   */
   precacheFiberNode(internalInstanceHandle, domElement);
+  /**
+   * props也放到dom上一份
+   */
   updateFiberProps(domElement, props);
   return domElement;
 }

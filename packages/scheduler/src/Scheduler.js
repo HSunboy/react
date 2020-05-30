@@ -8,7 +8,7 @@
 
 /* eslint-disable no-var */
 
-import {enableSchedulerDebugging} from 'shared/ReactFeatureFlags';
+import { enableSchedulerDebugging } from 'shared/ReactFeatureFlags';
 
 // TODO: Use symbols?
 var ImmediatePriority = 1;
@@ -177,6 +177,7 @@ function flushImmediateWork() {
   }
 }
 
+// 执行任务
 function flushWork(didTimeout) {
   // Exit right away if we're currently paused
 
@@ -266,7 +267,7 @@ function unstable_runWithPriority(priorityLevel, eventHandler) {
 
 function unstable_wrapCallback(callback) {
   var parentPriorityLevel = currentPriorityLevel;
-  return function() {
+  return function () {
     // This is a fork of runWithPriority, inlined for performance.
     var previousPriorityLevel = currentPriorityLevel;
     var previousEventStartTime = currentEventStartTime;
@@ -322,7 +323,7 @@ function unstable_scheduleCallback(callback, deprecated_options) {
     next: null,
     previous: null,
   };
-
+  // 下面开始根据过期时间来插入双向链表中, 开始调度
   // Insert the new callback into the list, ordered first by expiration, then
   // by insertion. So the new callback is inserted any other callback with
   // equal expiration.
@@ -452,14 +453,14 @@ var getCurrentTime;
 var ANIMATION_FRAME_TIMEOUT = 100;
 var rAFID;
 var rAFTimeoutID;
-var requestAnimationFrameWithTimeout = function(callback) {
+var requestAnimationFrameWithTimeout = function (callback) {
   // schedule rAF and also a setTimeout
-  rAFID = localRequestAnimationFrame(function(timestamp) {
+  rAFID = localRequestAnimationFrame(function (timestamp) {
     // cancel the setTimeout
     localClearTimeout(rAFTimeoutID);
     callback(timestamp);
   });
-  rAFTimeoutID = localSetTimeout(function() {
+  rAFTimeoutID = localSetTimeout(function () {
     // cancel the requestAnimationFrame
     localCancelAnimationFrame(rAFID);
     callback(getCurrentTime());
@@ -468,11 +469,11 @@ var requestAnimationFrameWithTimeout = function(callback) {
 
 if (hasNativePerformanceNow) {
   var Performance = performance;
-  getCurrentTime = function() {
+  getCurrentTime = function () {
     return Performance.now();
   };
 } else {
-  getCurrentTime = function() {
+  getCurrentTime = function () {
     return localDate.now();
   };
 }
@@ -505,7 +506,7 @@ if (globalValue && globalValue._schedMock) {
   // If this accidentally gets imported in a non-browser environment, e.g. JavaScriptCore,
   // fallback to a naive implementation.
   var _callback = null;
-  var _flushCallback = function(didTimeout) {
+  var _flushCallback = function (didTimeout) {
     if (_callback !== null) {
       try {
         _callback(didTimeout);
@@ -514,7 +515,7 @@ if (globalValue && globalValue._schedMock) {
       }
     }
   };
-  requestHostCallback = function(cb, ms) {
+  requestHostCallback = function (cb, ms) {
     if (_callback !== null) {
       // Protect against re-entrancy.
       setTimeout(requestHostCallback, 0, cb);
@@ -523,10 +524,10 @@ if (globalValue && globalValue._schedMock) {
       setTimeout(_flushCallback, 0, false);
     }
   };
-  cancelHostCallback = function() {
+  cancelHostCallback = function () {
     _callback = null;
   };
-  shouldYieldToHost = function() {
+  shouldYieldToHost = function () {
     return false;
   };
 } else {
@@ -535,15 +536,15 @@ if (globalValue && globalValue._schedMock) {
     if (typeof localRequestAnimationFrame !== 'function') {
       console.error(
         "This browser doesn't support requestAnimationFrame. " +
-          'Make sure that you load a ' +
-          'polyfill in older browsers. https://fb.me/react-polyfills',
+        'Make sure that you load a ' +
+        'polyfill in older browsers. https://fb.me/react-polyfills',
       );
     }
     if (typeof localCancelAnimationFrame !== 'function') {
       console.error(
         "This browser doesn't support cancelAnimationFrame. " +
-          'Make sure that you load a ' +
-          'polyfill in older browsers. https://fb.me/react-polyfills',
+        'Make sure that you load a ' +
+        'polyfill in older browsers. https://fb.me/react-polyfills',
       );
     }
   }
@@ -563,14 +564,14 @@ if (globalValue && globalValue._schedMock) {
   var previousFrameTime = 33;
   var activeFrameTime = 33;
 
-  shouldYieldToHost = function() {
+  shouldYieldToHost = function () {
     return frameDeadline <= getCurrentTime();
   };
 
   // We use the postMessage trick to defer idle work until after the repaint.
   var channel = new MessageChannel();
   var port = channel.port2;
-  channel.port1.onmessage = function(event) {
+  channel.port1.onmessage = function (event) {
     isMessageEventScheduled = false;
 
     var prevScheduledCallback = scheduledHostCallback;
@@ -584,11 +585,15 @@ if (globalValue && globalValue._schedMock) {
     if (frameDeadline - currentTime <= 0) {
       // There's no time left in this idle period. Check if the callback has
       // a timeout and whether it's been exceeded.
+      // 当前时间片用完， 看看任务过期了没，没过期的话，就放在下一个时间片
       if (prevTimeoutTime !== -1 && prevTimeoutTime <= currentTime) {
         // Exceeded the timeout. Invoke the callback even though there's no
         // time left.
         didTimeout = true;
       } else {
+        /**
+         * 任务没过期的情况
+         */
         // No timeout.
         if (!isAnimationFrameScheduled) {
           // Schedule another animation callback so we retry later.
@@ -612,7 +617,7 @@ if (globalValue && globalValue._schedMock) {
     }
   };
 
-  var animationTick = function(rafTime) {
+  var animationTick = function (rafTime) {
     if (scheduledHostCallback !== null) {
       // Eagerly schedule the next animation callback at the beginning of the
       // frame. If the scheduler queue is not empty at the end of the frame, it
@@ -658,7 +663,7 @@ if (globalValue && globalValue._schedMock) {
     }
   };
 
-  requestHostCallback = function(callback, absoluteTimeout) {
+  requestHostCallback = function (callback, absoluteTimeout) {
     scheduledHostCallback = callback;
     timeoutTime = absoluteTimeout;
     if (isFlushingHostCallback || absoluteTimeout < 0) {
@@ -674,7 +679,7 @@ if (globalValue && globalValue._schedMock) {
     }
   };
 
-  cancelHostCallback = function() {
+  cancelHostCallback = function () {
     scheduledHostCallback = null;
     isMessageEventScheduled = false;
     timeoutTime = -1;

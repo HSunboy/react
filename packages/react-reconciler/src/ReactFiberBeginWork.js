@@ -639,6 +639,9 @@ function finishClassComponent(
   hasContext: boolean,
   renderExpirationTime: ExpirationTime,
 ) {
+  /**
+   * 执行最后的操作，判断需不需要重新渲染，需要的话，就调用render，子节点diff。
+   */
   // Refs should update even if shouldComponentUpdate returns false
   markRef(current, workInProgress);
 
@@ -1680,6 +1683,10 @@ function beginWork(
   if (current !== null) {
     const oldProps = current.memoizedProps;
     const newProps = workInProgress.pendingProps;
+    /**
+     * 这里判断需不需要更新，这边的优先级是判断改组件有没有更新，有更新的话，后面遍历子组件还是会把过期时间设置为renderExpirationTime。
+     * 所以，父组件更新的话，子组件也会更新。
+     */
     if (
       oldProps === newProps &&
       !hasLegacyContextChanged() &&

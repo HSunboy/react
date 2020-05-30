@@ -206,6 +206,9 @@ const SimpleEventPlugin: PluginModule<MouseEvent> & {
 } = {
   eventTypes: eventTypes,
 
+  /**
+   * 是否为交互触发的事件，例如点击，提交
+   */
   isInteractiveTopLevelEventType(topLevelType: TopLevelType): boolean {
     const config = topLevelEventsToDispatchConfig[topLevelType];
     return config !== undefined && config.isInteractive === true;

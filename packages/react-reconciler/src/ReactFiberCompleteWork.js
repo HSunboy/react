@@ -100,7 +100,12 @@ let updateHostComponent;
 let updateHostText;
 if (supportsMutation) {
   // Mutation mode
-
+  /**
+   * react-dom 设置的方法。
+   */
+  /**
+   * 查找最近所有的子节点插入到当前dom
+   */
   appendAllChildren = function(
     parent: Instance,
     workInProgress: Fiber,
@@ -626,6 +631,9 @@ function completeWork(
             markUpdate(workInProgress);
           }
         } else {
+          /**
+           * 首次创建Dom节点
+           */
           let instance = createInstance(
             type,
             newProps,
@@ -634,6 +642,9 @@ function completeWork(
             workInProgress,
           );
 
+          /**
+           * 把子节点dom插入到创建的dom中
+           */
           appendAllChildren(instance, workInProgress, false, false);
 
           // Certain renderers require commit-time effects for initial mount.

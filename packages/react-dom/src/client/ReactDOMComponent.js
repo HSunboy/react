@@ -370,7 +370,7 @@ function updateDOMProperties(
     }
   }
 }
-
+// 创建dom节点
 export function createElement(
   type: string,
   props: Object,
@@ -385,6 +385,9 @@ export function createElement(
     rootContainerElement,
   );
   let domElement: Element;
+  /**
+   * 这一段都是处理svg，html，math之类的doctype
+   */
   let namespaceURI = parentNamespace;
   if (namespaceURI === HTML_NAMESPACE) {
     namespaceURI = getIntrinsicNamespace(type);
